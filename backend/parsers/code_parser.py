@@ -90,7 +90,7 @@ def parse_imports(src: str, file: str) -> list[Import]:
         out.append(Import(name=name, file=file, local=local, how=how))
 
     # ES6: import X from 'y' / import 'y' / import type X from 'y'
-    for m in re.finditer(r"""import\s+(?:type\s+)?(?:[\w{},*\s]+\s+from\s+)?['"]([^'"]+)['"]""", src):
+    for m in re.finditer(r"""import\s+(?:type\s+)?(?:[\w{},*\s]+?\bfrom\b\s+)?['"]([^'"]+)['"]""", src):
         add(m.group(1), "esm")
 
     # CommonJS: require('x')
@@ -101,8 +101,8 @@ def parse_imports(src: str, file: str) -> list[Import]:
     for m in re.finditer(r"^from\s+([\w.]+)\s+import\s+", src, re.MULTILINE):
         add(m.group(1), "py")
 
-    # Python: import x, y, z
-    for m in re.finditer(r"^import\s+([\w.,\s]+)", src, re.MULTILINE):
+    # Python: import x, y, z  (skip JS "import X from Y" lines)
+    for m in re.finditer(r"^import\s+((?!.*\bfrom\b)[\w.,\s]+?)(?:\s*(?:#|;|$))", src, re.MULTILINE):
         for part in m.group(1).split(","):
             name = part.strip().split(" as ")[0].strip().split(".")[0]
             if name:
