@@ -1,5 +1,5 @@
 """
-RepoLens — Main Streamlit Application
+RepoEngineer — Main Streamlit Application
 Run with: streamlit run app.py
 """
 from __future__ import annotations
@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(name)s  %(messa
 #  PAGE CONFIG
 # ═══════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title = "RepoLens — Deep Architecture Analyzer",
+    page_title = "RepoEngineer — Deep Architecture Analyzer",
     page_icon  = "⬡",
     layout     = "wide",
     initial_sidebar_state = "collapsed",
@@ -47,7 +47,7 @@ with nav_l:
                   background:linear-gradient(135deg,#00e87a,#4b9eff);
                   display:grid;place-items:center;font-size:13px;flex-shrink:0">⬡</div>
       <span style="font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;color:#dde0f5">
-        Repo<span style="color:#00e87a">Lens</span>
+        Repo<span style="color:#00e87a">Engineer</span>
       </span>
     </div>""", unsafe_allow_html=True)
 with nav_r:
@@ -75,7 +75,7 @@ with st.sidebar:
         placeholder="ghp_xxxxxxxxxxxx",
     )
     st.markdown("---")
-    st.markdown("**About RepoLens**")
+    st.markdown("**About RepoEngineer**")
     st.markdown("""
 Fetches up to **60 source files** from any public GitHub repo
 and runs deep analysis to extract:
@@ -108,7 +108,7 @@ with h_l:
                    background-clip:text">Not Guesswork.</span>
     </h1>
     <p style="color:#505070;font-size:12px;line-height:1.9;max-width:500px">
-      Drop a public GitHub URL — RepoLens fetches up to 60 source files, parses every
+      Drop a public GitHub URL — RepoEngineer fetches up to 60 source files, parses every
       class, function, import, route &amp; decorator, then maps a true layered architecture
       with interactive diagrams. Works for JS/TS, Python, Go, Rust &amp; more.
     </p>""", unsafe_allow_html=True)
