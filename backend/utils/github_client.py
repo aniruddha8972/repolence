@@ -16,7 +16,7 @@ import requests
 from config.settings import (
     GH_API_BASE, GH_RAW_BASE, GH_API_HDRS,
     MAX_FILES_TO_FETCH, MAX_FILE_SIZE_BYTES,
-    FILE_FETCH_TIMEOUT, API_FETCH_TIMEOUT,
+    FILE_FETCH_TIMEOUT, API_FETCH_TIMEOUT, FETCH_WORKERS,
 )
 
 log = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def fetch_files_parallel(
         content = _raw_get(owner, repo, branch, path, token=token)
         return FetchResult(path=path, content=content, ok=bool(content.strip()))
 
-    with ThreadPoolExecutor(max_workers=20) as pool:
+    with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as pool:
         futures = {pool.submit(_fetch, p): p for p in paths}
         for future in as_completed(futures):
             done += 1
