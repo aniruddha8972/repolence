@@ -250,42 +250,51 @@ def _build_arch_map(result: AnalysisResult) -> go.Figure:
     LAYER_ORDER = ["entry", "ctrl", "service", "data", "util", "ext"]
     arch = result.arch
 
-    fig = go.Figure()
+    # ── Dynamic sizing ────────────────────────────────────────────────
+    # Calculate how many nodes are in the tallest layer to set height
+    populated    = [lyr for lyr in arch.layers if lyr.nodes]
+    max_nodes    = max((len(lyr.nodes) for lyr in populated), default=1)
+    # Each node needs ~80px of vertical space; minimum 500, no cap
+    fig_height   = max(520, max_nodes * 85 + 150)
+    # Y spacing between nodes: fixed 1.3 units; total y range is dynamic
+    NODE_SPACING = 1.3
+    y_half       = (max_nodes / 2) * NODE_SPACING + 1.5   # padding
 
-    populated = [lyr for lyr in arch.layers if lyr.nodes]
+    fig = go.Figure()
 
     for layer in populated:
         li    = LAYER_ORDER.index(layer.key) if layer.key in LAYER_ORDER else 0
         color = LAYER_COLOR.get(layer.key, "#888")
         n     = len(layer.nodes)
 
-        # Band background
+        # Band background — full dynamic height
         fig.add_shape(type="rect",
-            x0=li - 0.45, y0=-6, x1=li + 0.45, y1=6,
+            x0=li - 0.45, y0=-y_half, x1=li + 0.45, y1=y_half,
             fillcolor=f"rgba({_rgb(color)},0.05)",
             line=dict(color=f"rgba({_rgb(color)},0.2)", width=1),
             layer="below")
 
-        fig.add_annotation(x=li, y=5.6,
+        fig.add_annotation(x=li, y=y_half + 0.4,
             text=f"<b>{layer.label}</b>", showarrow=False,
             font=dict(size=8, color=color, family="JetBrains Mono"),
             xanchor="center")
 
-        node_y  = [(j - (n - 1) / 2) * 1.3 for j in range(n)]
-        labels  = [_trunc(nd.label, 14) for nd in layer.nodes]
+        node_y  = [(j - (n - 1) / 2) * NODE_SPACING for j in range(n)]
+        labels  = [_trunc(nd.label, 16) for nd in layer.nodes]
         hovers  = [f"<b>{nd.label}</b><br><i>{layer.label}</i><br>{nd.detail}"
                    for nd in layer.nodes]
 
-        # Glow circles
+        # Glow
         fig.add_trace(go.Scatter(
             x=[li] * n, y=node_y, mode="markers",
-            marker=dict(size=30, color=f"rgba({_rgb(color)},0.09)",
+            marker=dict(size=28, color=f"rgba({_rgb(color)},0.09)",
                         line=dict(color=f"rgba({_rgb(color)},0.3)", width=1.5)),
             hoverinfo="skip", showlegend=False))
 
+        # Dots + labels
         fig.add_trace(go.Scatter(
             x=[li] * n, y=node_y, mode="markers+text",
-            marker=dict(size=9, color=color, line=dict(color=BG, width=2)),
+            marker=dict(size=8, color=color, line=dict(color=BG, width=2)),
             text=labels, textposition="bottom center",
             textfont=dict(size=8, color=TEXT, family="JetBrains Mono"),
             hovertext=hovers, hoverinfo="text",
@@ -293,12 +302,12 @@ def _build_arch_map(result: AnalysisResult) -> go.Figure:
             hoverlabel=dict(bgcolor=CARD, bordercolor=color,
                             font=dict(size=11, color=TEXT, family="JetBrains Mono"))))
 
-    # Inter-layer arrows as Scatter (no axref)
+    # Inter-layer arrows
     prev = None
     for layer in populated:
         li = LAYER_ORDER.index(layer.key) if layer.key in LAYER_ORDER else 0
         n  = len(layer.nodes)
-        cy = (0 - (n - 1) / 2) * 1.3   # y of first node
+        cy = (0 - (n - 1) / 2) * NODE_SPACING
         if prev is not None:
             pli, pcy = prev
             for t in _arrow_traces(pli + 0.46, pcy, li - 0.46, cy,
@@ -308,22 +317,18 @@ def _build_arch_map(result: AnalysisResult) -> go.Figure:
 
     fig.update_layout(
         paper_bgcolor=BG, plot_bgcolor=BG,
-        height=580, margin=dict(l=20, r=20, t=50, b=20),
+        height=fig_height,
+        margin=dict(l=20, r=20, t=60, b=20),
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
-                   range=[-0.7, len(LAYER_ORDER) - 0.3]),
+                   range=[-0.7, len(LAYER_ORDER) - 0.3],
+                   fixedrange=True),   # disable horizontal zoom/pan
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
-                   range=[-6.5, 6.2]),
+                   range=[-(y_half + 0.5), y_half + 1.0]),
         hovermode="closest",
-        legend=dict(orientation="h", y=1.06, x=0,
+        legend=dict(orientation="h", y=1.04, x=0,
                     font=dict(size=9, color=TEXT, family="JetBrains Mono"),
                     bgcolor="rgba(0,0,0,0)"))
     return fig
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  3. IMPORT FLOW — Sankey
-# ══════════════════════════════════════════════════════════════════════════════
-
 def _build_sankey(result: AnalysisResult) -> go.Figure | None:
     ext_imports = [i for i in result.imports if not i.local]
     if not ext_imports:
